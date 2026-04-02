@@ -1,0 +1,8 @@
+django>=6.0.3
+pika
+requests
+python-dotenv
+pymysql
+python-jose[cryptography]
+passlib[bcrypt]
+django-cors-headers
