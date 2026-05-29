@@ -1,4 +1,4 @@
-# 🎓 UniLearn - Microservices Learning Portal Backend
+# UniLearn - Microservices Learning Portal Backend
 
 Vietnamese version below / Hướng dẫn tiếng Việt ở phía dưới.
 
@@ -8,9 +8,9 @@ UniLearn is a high-performance, asynchronous e-learning portal backend designed 
 
 ---
 
-## 🚀 English Guide
+## English Guide
 
-### 🛠️ 1. Environment Prerequisite Setup
+### 1. Environment Prerequisite Setup
 Make sure you have Python 3.10+, MySQL, and RabbitMQ installed locally. Alternatively, you can use Docker.
 
 1. **Clone the project & Navigate to the backend directory**:
@@ -39,7 +39,7 @@ Make sure you have Python 3.10+, MySQL, and RabbitMQ installed locally. Alternat
    RABBITMQ_URL=amqp://guest:guest@localhost:5672/
    ```
 
-### 💾 2. Multi-Database Setup & Restoration
+### 2. Multi-Database Setup & Restoration
 UniLearn isolates service contexts using 4 separate databases:
 * `auth_db` — Holds user accounts and security contexts.
 * `course_db` — Tracks courses, materials, and student enrollments.
@@ -57,7 +57,7 @@ mysql -u root -p payment_db < database/backups/payment_db_backup.sql
 mysql -u root -p notification_db < database/backups/notification_db_backup.sql
 ```
 
-### 🏃‍♂️ 3. Running the Application
+### 3. Running the Application
 To run the system locally, you **MUST** run the web gateway and both background subscriber workers concurrently.
 
 1. **Start the Main Gateway Web Server** (Terminal 1):
@@ -81,7 +81,7 @@ To run the system locally, you **MUST** run the web gateway and both background 
    PYTHONPATH=. python myproject/courses_service/app/messaging/consumer.py
    ```
 
-### 🧠 4. AI RAG Slide Vector Indexing
+### 4. AI RAG Slide Vector Indexing
 To index materials (PDF, video transcripts, slide files) into the vector matrix:
 1. Make sure `AI_API_KEY` is loaded.
 2. Run the indexing batch script:
@@ -95,11 +95,11 @@ To index materials (PDF, video transcripts, slide files) into the vector matrix:
 
 ---
 
-## 🇻🇳 Hướng Dẫn Tiếng Việt
+## Hướng Dẫn Tiếng Việt
 
 UniLearn là hệ thống Học trực tuyến hiệu năng cao, được thiết kế theo mô hình **Modular Monolith** phân rã trên nền tảng Django 6.0.3. Hệ thống cô lập 5 dịch vụ lõi, chia tách hoạt động trên 4 cơ sở dữ liệu MySQL độc lập (thông qua bộ định tuyến `db_router.py`), phối hợp xử lý thanh toán bất đồng bộ qua RabbitMQ (thông qua Pika) và tích hợp trợ lý AI học tập thông minh (RAG) sử dụng Google Gemini.
 
-### 🛠️ 1. Cài đặt Thư viện và Môi trường
+### 1. Cài đặt Thư viện và Môi trường
 Yêu cầu máy cài sẵn Python 3.10+, MySQL Server và RabbitMQ Server.
 
 1. **Mở Terminal tại thư mục gốc backend**:
@@ -127,7 +127,7 @@ Yêu cầu máy cài sẵn Python 3.10+, MySQL Server và RabbitMQ Server.
    RABBITMQ_URL=amqp://guest:guest@localhost:5672/
    ```
 
-### 💾 2. Khởi tạo và Phục hồi Cơ sở Dữ liệu (MySQL)
+### 2. Khởi tạo và Phục hồi Cơ sở Dữ liệu (MySQL)
 Hệ thống sử dụng bộ router cô lập 4 database độc lập. Thực hiện tạo database và nạp dữ liệu mẫu từ các file backup trong `database/backups/`:
 
 ```powershell
@@ -141,32 +141,32 @@ mysql -u root -p payment_db < database/backups/payment_db_backup.sql
 mysql -u root -p notification_db < database/backups/notification_db_backup.sql
 ```
 
-### 🏃‍♂️ 3. Khởi chạy Hệ thống (Chạy Thủ Công)
+### 3. Khởi chạy Hệ thống (Chạy Thủ Công)
 Để hệ thống vận hành trọn vẹn và xử lý ghi danh/thông báo, bạn **BẮT BUỘC** phải chạy cổng API chính và 2 tiến trình worker ngầm đồng thời:
 
 1.  **Chạy API Server chính** (Terminal 1):
-    ```bash
-    python manage.py runserver
-    # Server chạy tại http://localhost:8000
-    ```
+     ```bash
+     python manage.py runserver
+     # Server chạy tại http://localhost:8000
+     ```
 2.  **Chạy Notification Worker** (Terminal 2):
-    ```bash
-    # Windows PowerShell:
-    $env:PYTHONPATH="." ; python myproject/notification_service/app/messaging/consumer.py
-    # Linux/MacOS:
-    PYTHONPATH=. python myproject/notification_service/app/messaging/consumer.py
-    ```
+     ```bash
+     # Windows PowerShell:
+     $env:PYTHONPATH="." ; python myproject/notification_service/app/messaging/consumer.py
+     # Linux/MacOS:
+     PYTHONPATH=. python myproject/notification_service/app/messaging/consumer.py
+     ```
 3.  **Chạy Course Enrollment Worker** (Terminal 3):
-    ```bash
-    # Windows PowerShell:
-    $env:PYTHONPATH="." ; python myproject/courses_service/app/messaging/consumer.py
-    # Linux/MacOS:
-    PYTHONPATH=. python myproject/courses_service/app/messaging/consumer.py
-    ```
+     ```bash
+     # Windows PowerShell:
+     $env:PYTHONPATH="." ; python myproject/courses_service/app/messaging/consumer.py
+     # Linux/MacOS:
+     PYTHONPATH=. python myproject/courses_service/app/messaging/consumer.py
+     ```
 
 ---
 
-## 🐳 Docker Quick Start (Khởi chạy bằng Docker)
+## Docker Quick Start (Khởi chạy bằng Docker)
 
 Nếu đã cài đặt Docker Desktop, bạn có thể khởi chạy toàn bộ môi trường (gồm 4 Databases, RabbitMQ, Web Server và 2 Workers) chỉ bằng một lệnh duy nhất:
 
