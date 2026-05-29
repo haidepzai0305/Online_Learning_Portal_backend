@@ -3,6 +3,8 @@ from django.db import transaction
 from myproject.auth_service.app.models.users import User
 from myproject.auth_service.app.models.user_social_auth import UserSocialAuth
 from myproject.auth_service.app.models.user_credentials import UserCredentials
+from myproject.auth_service.app.models.user_roles import UserRoles
+from myproject.auth_service.app.models.roles import Roles
 from myproject.auth_service.app.utils.security import get_password_hash, verify_password, create_access_token
 from myproject.auth_service.app.messaging.publisher import publisher
 from myproject.auth_service.app.core.config import settings
@@ -31,6 +33,10 @@ class AuthService:
                     user=user,
                     password_hash=get_password_hash(password)
                 )
+                
+                # Mặc định gán role student cho người dùng mới
+                role_obj, _ = Roles.objects.get_or_create(name='student')
+                UserRoles.objects.create(user=user, role=role_obj)
 
             # 3. PHÁT EVENT SANG RABBITMQ SAU KHI LƯU DB THÀNH CÔNG
             event_data = {
@@ -49,27 +55,37 @@ class AuthService:
             raise e
 
     @staticmethod
-    def authenticate_user(email, password):
+    def authenticate_user(identifier, password):
         try:
-            print(f"DEBUG: Attempting login for email: {email}")
-            user = User.objects.get(email=email)
+            print(f"DEBUG: Attempting login for identifier: {identifier}")
+            from django.db.models import Q
+            user = User.objects.get(Q(email=identifier) | Q(username=identifier))
             credentials = UserCredentials.objects.get(user=user)
 
-            if not verify_password(password, credentials.password_hash):
-                print(f"DEBUG: Password verification failed for user: {email}")
+            is_valid = verify_password(password, credentials.password_hash)
+            print(f"DEBUG: Password verification for {identifier}: {is_valid}")
+            
+            if not is_valid:
+                print(f"DEBUG: Hash in DB: {credentials.password_hash}")
                 return None
 
-            print(f"DEBUG: Login successful for user: {email}")
+            print(f"DEBUG: Login successful for user: {user.email}")
+            
+            # Fetch user roles
+            from myproject.auth_service.app.models.user_roles import UserRoles
+            roles = list(UserRoles.objects.filter(user=user).values_list('role__name', flat=True))
+            
             # Tạo Access Token
             access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
             access_token = create_access_token(
-                data={"sub": user.email, "user_id": user.id}, 
+                data={"sub": user.email, "user_id": user.id, "roles": roles}, 
                 expires_delta=access_token_expires
             )
 
             return {
                 "access_token": access_token,
                 "token_type": "bearer",
+                "role": roles[0] if roles else "student",
                 "user": {
                     "id": user.id,
                     "email": user.email,
@@ -119,16 +135,20 @@ class AuthService:
                 publisher.publish_user_registered(event_data)
 
             # 6. Tạo JWT
+            from myproject.auth_service.app.models.user_roles import UserRoles
+            roles = list(UserRoles.objects.filter(user=user).values_list('role__name', flat=True))
+            
             access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
             access_token = create_access_token(
-                data={"sub": user.email, "user_id": user.id}, 
+                data={"sub": user.email, "user_id": user.id, "roles": roles}, 
                 expires_delta=access_token_expires
             )
 
             return {
                 "access_token": access_token,
                 "token_type": "bearer",
-"user": {
+                "role": roles[0] if roles else "student",
+                "user": {
                     "id": user.id,
                     "email": user.email,
                     "username": user.username

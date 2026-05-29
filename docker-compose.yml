@@ -1,0 +1,83 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: unilearn_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+    ports:
+      - "3306:3306"
+    volumes:
+      - unilearn_db_data:/var/lib/mysql
+      - ./database/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-ppassword" ]
+      timeout: 20s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: unilearn_mq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "check_running" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: unilearn_backend
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_HOST=db
+      - DB_ROOT_PASSWORD=password
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - DJANGO_DEBUG=True
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+  worker:
+    build: .
+    container_name: unilearn_notification_worker
+    volumes:
+      - .:/app
+    environment:
+      - DB_HOST=db
+      - DB_ROOT_PASSWORD=password
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: python -m myproject.notification_service.app.messaging.consumer
+
+  courses_worker:
+    build: .
+    container_name: unilearn_courses_worker
+    volumes:
+      - .:/app
+    environment:
+      - DB_HOST=db
+      - DB_ROOT_PASSWORD=password
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    command: python -m myproject.courses_service.app.messaging.consumer
+
+volumes:
+  unilearn_db_data:

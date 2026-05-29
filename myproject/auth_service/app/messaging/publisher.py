@@ -12,8 +12,8 @@ class RabbitMQPublisher:
             params = pika.URLParameters(settings.RABBITMQ_URL)
             self.connection = pika.BlockingConnection(params)
             self.channel = self.connection.channel()
-            # Khai báo queue để đảm bảo nó tồn tại
-            self.channel.queue_declare(queue=settings.USER_REGISTERED_QUEUE, durable=True)
+            # Standardize on a topic exchange
+            self.channel.exchange_declare(exchange='unilearn_events', exchange_type='topic', durable=True)
             return True
         except Exception as e:
             print(f"Failed to connect to RabbitMQ at {settings.RABBITMQ_URL}: {e}")
@@ -32,16 +32,18 @@ class RabbitMQPublisher:
                 print("RabbitMQ channel is not initialized. Cannot publish message.")
                 return
 
+            # Standardized event structure
             message = json.dumps(user_data)
+            
             self.channel.basic_publish(
-                exchange='',
-                routing_key=settings.USER_REGISTERED_QUEUE,
+                exchange='unilearn_events',
+                routing_key='user.registered',
                 body=message,
                 properties=pika.BasicProperties(
-                    delivery_mode=2,  # Làm cho tin nhắn bền vững (persistent)
+                    delivery_mode=2,
                 )
             )
-            print(f" [x] Sent event 'user_registered' for user: {user_data.get('email')}")
+            print(f" [x] Sent event 'user.registered' to unilearn_events exchange")
         except Exception as e:
             print(f"Failed to publish message: {e}")
 

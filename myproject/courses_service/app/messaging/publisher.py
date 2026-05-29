@@ -26,7 +26,9 @@ class RabbitMQPublisher:
             params = self._pika.URLParameters(settings.RABBITMQ_URL)
             self.connection = self._pika.BlockingConnection(params)
             self.channel = self.connection.channel()
-            self.channel.queue_declare(queue=settings.COURSE_EVENTS_QUEUE, durable=True)
+            
+            # Using a Topic exchange for flexible system-wide events
+            self.channel.exchange_declare(exchange='unilearn_events', exchange_type='topic', durable=True)
             return True
         except Exception as e:
             print(f"[RabbitMQ] Failed to connect ({settings.RABBITMQ_URL}): {e}")
@@ -48,18 +50,20 @@ class RabbitMQPublisher:
 
             event_data = {
                 "event_type": event_type,
-                "data": data
+                "payload": data 
             }
             message = json.dumps(event_data)
             
-            from myproject.courses_service.app.core.config import settings
+            # Convert underscore event name to dotted routing key
+            routing_key = event_type.replace('_', '.')
+            
             self.channel.basic_publish(
-                exchange='',
-                routing_key=settings.COURSE_EVENTS_QUEUE,
+                exchange='unilearn_events',
+                routing_key=routing_key,
                 body=message,
                 properties=self._pika.BasicProperties(delivery_mode=2),
             )
-            print(f"[RabbitMQ] Sent event '{event_type}'")
+            print(f"[RabbitMQ] Sent event '{event_type}' to unilearn_events exchange with key '{routing_key}'")
         except Exception as e:
             print(f"[RabbitMQ] Failed to publish message: {e}")
 

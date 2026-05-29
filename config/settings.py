@@ -48,6 +48,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'myproject.auth_service.app',
+    'myproject.courses_service.app',
+    'myproject.ai_service.app',
+    'myproject.notification_service.app',
+    'myproject.payment_service.app',
 ]
 
 MIDDLEWARE = [
@@ -86,14 +90,40 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.sqlite3'),
-        'NAME': os.getenv('DB_NAME', BASE_DIR / 'db.sqlite3'),
-        'USER': os.getenv('DB_USER', ''),
-        'PASSWORD': os.getenv('DB_PASSWORD', ''),
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'auth_db',
+        'USER': 'root',
+        'PASSWORD': os.getenv('DB_ROOT_PASSWORD', 'password'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', '3306'),
+        'PORT': '3306',
+    },
+    'courses': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'course_db',
+        'USER': 'root',
+        'PASSWORD': os.getenv('DB_ROOT_PASSWORD', 'password'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': '3306',
+    },
+    'notifications': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'notification_db',
+        'USER': 'root',
+        'PASSWORD': os.getenv('DB_ROOT_PASSWORD', 'password'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': '3306',
+    },
+    'payments': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'payment_db',
+        'USER': 'root',
+        'PASSWORD': os.getenv('DB_ROOT_PASSWORD', 'password'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': '3306',
     }
 }
+
+DATABASE_ROUTERS = ['config.db_router.DatabaseRouter']
 
 
 # Password validation
@@ -131,6 +161,9 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # CORS Configuration
 CORS_ALLOW_ALL_ORIGINS = True

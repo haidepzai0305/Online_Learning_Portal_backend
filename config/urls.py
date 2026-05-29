@@ -17,8 +17,15 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
+from myproject.auth_service.app.api.views import login_view
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('myproject.auth_service.app.api.urls')),
+    path('api/token/', login_view), # Compatibility for frontend
+    path('api/courses/', include('myproject.courses_service.app.api.urls')),
+    path('api/ai/', include('myproject.ai_service.app.api.urls')),
+    path('api/payments/', include('myproject.payment_service.app.api.urls')),
+    path('api/notifications/', include('myproject.notification_service.app.api.urls')),
 ]
 

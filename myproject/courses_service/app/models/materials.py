@@ -14,6 +14,9 @@ class Material(models.Model):
     material_type = models.CharField(max_length=10, choices=MaterialType.choices)
     file = models.FileField(upload_to='materials/', blank=True, null=True)
     video_url = models.URLField(blank=True, null=True)
+    start_time = models.PositiveIntegerField(default=0) # Start time in seconds
+    content = models.TextField(blank=True, null=True)
+    order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

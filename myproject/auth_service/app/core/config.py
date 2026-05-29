@@ -1,7 +1,10 @@
+from pathlib import Path
 import os
 from dotenv import load_dotenv
 
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
+env_path = os.path.join(BASE_DIR, 'myproject', 'auth_service', 'app', 'core', '.env')
+load_dotenv(env_path)
 
 class Settings:
     PROJECT_NAME: str = "Online Learning Portal - Auth Service"

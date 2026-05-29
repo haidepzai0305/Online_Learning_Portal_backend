@@ -25,11 +25,12 @@ def register_view(request):
 
             email = data.get("email", "").strip()
             username = data.get("username", "").strip()
+            if not username and email:
+                username = email.split('@')[0]
             password = data.get("password")
 
             missing_fields = []
             if not email: missing_fields.append("email")
-            if not username: missing_fields.append("username")
             if not password: missing_fields.append("password")
 
             if missing_fields:
@@ -64,22 +65,30 @@ def register_view(request):
 def login_view(request):
     if request.method == "POST":
         try:
-            data = json.loads(request.body)
-            email = data.get("email", "").strip()
+            # Try to handle both JSON and Form data if needed
+            if request.content_type == 'application/json':
+                data = json.loads(request.body)
+            else:
+                data = request.POST
+
+            identifier = data.get("email") or data.get("username") or data.get("identifier")
             password = data.get("password")
 
-            if not email or not password:
-                return JsonResponse({"error": "Email and password are required"}, status=400)
+            if not identifier or not password:
+                return JsonResponse({"error": "Identifier (email/username) and password are required"}, status=400)
 
-            auth_result = AuthService.authenticate_user(email, password)
+            auth_result = AuthService.authenticate_user(identifier.strip(), password)
 
             if not auth_result:
-                return JsonResponse({"error": "Invalid credentials"}, status=401)
+                return JsonResponse({"error": "Invalid credentials. Please check your email/username and password."}, status=401)
 
             return JsonResponse(auth_result)
 
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON body"}, status=400)
         except Exception as e:
-            return JsonResponse({"error": str(e)}, status=400)
+            logger.error(f"Login Error: {str(e)}")
+            return JsonResponse({"error": f"Login failed: {str(e)}"}, status=400)
 
 @csrf_exempt
 @jwt_required
@@ -89,9 +98,17 @@ def me_view(request):
     Access it with header: Authorization: Bearer <token>
     """
     if request.method == "GET":
+        from myproject.auth_service.app.models.users import User
+        from myproject.auth_service.app.models.user_roles import UserRoles
+        
+        user = User.objects.get(id=request.user_id)
+        roles = list(UserRoles.objects.filter(user=user).values_list('role__name', flat=True))
+        
         return JsonResponse({
-            "user_id": request.user_id,
-            "email": request.user_email,
+            "id": user.id,
+            "email": user.email,
+            "username": user.username,
+            "role": roles[0] if roles else "student",
             "message": "Authenticated user retrieved successfully"
         })
     

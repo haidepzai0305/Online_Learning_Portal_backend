@@ -5,16 +5,27 @@ from myproject.courses_service.app.models.enrollments import Enrollment
 from myproject.courses_service.app.models.announcements import Announcement
 from myproject.auth_service.app.models.users import User
 from myproject.courses_service.app.messaging.publisher import publisher
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CourseService:
     @staticmethod
-    def create_course(title, description, syllabus, professor_id):
+    def create_course(title, description, syllabus, professor_id, **kwargs):
         professor = User.objects.get(pk=professor_id)
+        
         course = Course.objects.create(
             title=title,
             description=description,
             syllabus=syllabus,
-            professor=professor
+            professor=professor,
+            price=kwargs.get('price', 0.00),
+            original_price=kwargs.get('original_price'),
+            duration=kwargs.get('duration', '0h'),
+            level=kwargs.get('level', 'Beginner'),
+            thumbnail_url=kwargs.get('thumbnail_url'),
+            learning_outcomes=kwargs.get('learning_outcomes'),
+            category=kwargs.get('category', 'frontend')
         )
         
         publisher.publish_event("course_created", {
@@ -119,6 +130,25 @@ class CourseService:
                 "course_title": course.title
             })
             
+            # Send confirmation email
+            try:
+                from django.core.mail import send_mail
+                from django.conf import settings
+                
+                subject = f"Xác nhận thanh toán khóa học: {course.title}"
+                message = f"Chào {student.username},\n\nBạn đã thanh toán thành công khóa học '{course.title}'.\nHãy truy cập vào 'Khóa học của tôi' để bắt đầu học nhé!\n\nTrân trọng,\nUniLearn Team"
+                
+                send_mail(
+                    subject,
+                    message,
+                    settings.EMAIL_HOST_USER if hasattr(settings, 'EMAIL_HOST_USER') else 'noreply@unilearn.com',
+                    [student.email],
+                    fail_silently=True,
+                )
+                logger.info(f"Enrollment confirmation email sent successfully to {student.email}")
+            except Exception as e:
+                logger.error(f"Failed to send enrollment email to {student.email}: {e}")
+            
         return enrollment
 
     @staticmethod
@@ -129,5 +159,16 @@ class CourseService:
         return enrollment
 
     @staticmethod
-    def list_courses():
-        return Course.objects.all()
+    def list_courses(search_query=None, category=None):
+        queryset = Course.objects.all()
+        if category and category != "all" and category != "":
+            queryset = queryset.filter(category__iexact=category)
+            
+        if search_query:
+            from django.db.models import Q
+            queryset = queryset.filter(
+                Q(title__icontains=search_query) | 
+                Q(description__icontains=search_query) |
+                Q(category__icontains=search_query)
+            )
+        return queryset
